@@ -786,27 +786,8 @@ module Sequel
     end
 
     # SQL fragment for SQL::Expression, result depends on the specific type of expression.
-    def literal_expression(expr)
-      case expr
-      when SQL::ComplexExpression then        complex_expression_sql(expr.op, expr.args)
-      when SQL::AliasedExpression then        aliased_expression_sql(expr)
-      when SQL::CaseExpression then           case_expression_sql(expr)
-      when SQL::Cast then                     cast_sql(expr.expr, expr.type)
-      when SQL::ColumnAll then                column_all_sql(expr)
-      when SQL::Constant then                 constant_sql(expr.constant)
-      when SQL::Function then                 function_sql(expr)
-      when SQL::Identifier then               quote_identifier(expr.value)
-      when SQL::JoinOnClause then             join_on_clause_sql(expr)
-      when SQL::JoinUsingClause then          join_using_clause_sql(expr)
-      when SQL::JoinClause then               join_clause_sql(expr)
-      when SQL::PlaceholderLiteralString then placeholder_literal_string_sql(expr)
-      when SQL::OrderedExpression then        ordered_expression_sql(expr)
-      when SQL::QualifiedIdentifier then      qualified_identifier_sql(expr)
-      when SQL::SQLArray then                 array_sql(expr.array)
-      when SQL::Subscript then                subscript_sql(expr)
-      when SQL::Window then                   window_sql(expr.opts)
-      when SQL::WindowFunction then           window_function_sql(expr.function, expr.window)
-      end
+    def literal_expression(v)
+      v.to_s(self)
     end
 
     # SQL fragment for false

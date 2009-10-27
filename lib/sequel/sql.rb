@@ -36,6 +36,14 @@ module Sequel
 
     # Base class for all SQL fragments
     class Expression
+      # Create a to_s instance method that takes a dataset, and calls
+      # the method provided on the dataset with args as the argument (self by default).
+      # Used to DRY up some code.
+      def self.to_s_method(meth, args=:self) # :nodoc:
+        class_eval("def to_s(ds); ds.#{meth}(#{args}) end", __FILE__, __LINE__)
+      end
+      private_class_method :to_s_method
+
       # Returns self, because SQL::Expression already acts like
       # LiteralString.
       def lit
@@ -119,6 +127,8 @@ module Sequel
         other.is_a?(self.class) && @op.eql?(other.op) && @args.eql?(other.args)
       end
       alias == eql?
+      
+      to_s_method :complex_expression_sql, '@op, @args'
     end
 
     # The base class for expressions that can be used in multiple places in
@@ -387,6 +397,8 @@ module Sequel
       def initialize(expression, aliaz)
         @expression, @aliaz = expression, aliaz
       end
+
+      to_s_method :aliased_expression_sql
     end
 
     # Blob is used to represent binary data in the Ruby environment that is
@@ -480,6 +492,8 @@ module Sequel
         raise(Sequel::Error, 'CaseExpression conditions must be a hash or array of all two pairs') unless Sequel.condition_specifier?(conditions)
         @conditions, @default, @expression = conditions.to_a, default, expression
       end
+
+      to_s_method :case_expression_sql
     end
 
     # Represents a cast of an SQL expression to a specific type.
@@ -495,6 +509,8 @@ module Sequel
         @expr = expr
         @type = type
       end
+
+      to_s_method :cast_sql, '@expr, @type'
     end
 
     # Represents all columns in a given table, table.* in SQL
@@ -512,6 +528,8 @@ module Sequel
       def ==(x)
         x.class == self.class and @table == x.table
       end
+
+      to_s_method :column_all_sql
     end
     
     class ComplexExpression
@@ -523,12 +541,12 @@ module Sequel
 
     # Represents constants or psuedo-constants (e.g. CURRENT_DATE) in SQL
     class Constant < GenericExpression
-      attr_reader :constant
-
       # Create an object with the given table
       def initialize(constant)
         @constant = constant
       end
+      
+      to_s_method :constant_sql, '@constant'
     end
     
     # Holds default generic constants that can be referenced.  These
@@ -559,6 +577,8 @@ module Sequel
       def ==(x)
          x.class == self.class && @f == x.f && @args == x.args
       end
+
+      to_s_method :function_sql
     end
     
     class GenericExpression
@@ -586,6 +606,8 @@ module Sequel
       def initialize(value)
         @value = value
       end
+      
+      to_s_method :quote_identifier, '@value'
     end
     
     # Represents an SQL JOIN clause, used for joining tables.
@@ -603,6 +625,8 @@ module Sequel
       def initialize(join_type, table, table_alias = nil)
         @join_type, @table, @table_alias = join_type, table, table_alias
       end
+
+      to_s_method :join_clause_sql
     end
 
     # Represents an SQL JOIN table ON conditions clause.
@@ -616,6 +640,8 @@ module Sequel
         @on = on
         super(*args)
       end
+
+      to_s_method :join_on_clause_sql
     end
 
     # Represents an SQL JOIN table USING (columns) clause.
@@ -630,6 +656,8 @@ module Sequel
         @using = using
         super(*args)
       end
+
+      to_s_method :join_using_clause_sql
     end
 
     # Represents a literal string with placeholders and arguments.
@@ -654,6 +682,8 @@ module Sequel
         @args = args.is_a?(Array) && args.length == 1 && (v = args.at(0)).is_a?(Hash) ? v : args
         @parens = parens
       end
+
+      to_s_method :placeholder_literal_string_sql
     end
 
     # Subclass of ComplexExpression where the expression results
@@ -692,6 +722,8 @@ module Sequel
       def invert
         OrderedExpression.new(@expression, !@descending)
       end
+
+      to_s_method :ordered_expression_sql
     end
 
     # Represents a qualified (column with table or table with schema) reference. 
@@ -708,6 +740,8 @@ module Sequel
       def initialize(table, column)
         @table, @column = table, column
       end
+      
+      to_s_method :qualified_identifier_sql
     end
     
     # Subclass of ComplexExpression where the expression results
@@ -771,6 +805,8 @@ module Sequel
       def initialize(array)
         @array = array
       end
+
+      to_s_method :array_sql, '@array'
     end
 
     # Represents an SQL array access, with multiple possible arguments.
@@ -791,6 +827,8 @@ module Sequel
       def |(sub)
         Subscript.new(@f, @sub + Array(sub))
       end
+      
+      to_s_method :subscript_sql
     end
 
     # The purpose of this class is to allow the easy creation of SQL identifiers and functions
@@ -891,6 +929,8 @@ module Sequel
       def initialize(opts={})
         @opts = opts
       end
+
+      to_s_method :window_sql, '@opts'
     end
 
     # A WindowFunction is a grouping of a function with a window over which it operates.
@@ -905,6 +945,8 @@ module Sequel
       def initialize(function, window)
         @function, @window = function, window
       end
+
+      to_s_method :window_function_sql, '@function, @window'
     end
   end
 
